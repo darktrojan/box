@@ -3,7 +3,7 @@
     "message": "Uploads your large attachments to your Box instead of sending them by email"
   },
   "extensionName": {
-    "message": "CloudFile Provider for Box"
+    "message": "FileLink Provider for Box"
   },
   "notAuthed_clickHere": {
     "message": "Connect your Box account\u2026"
