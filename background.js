@@ -210,7 +210,7 @@ class Account {
       name,
       parent: { id: folderId },
     }));
-    body.append("file", new Blob([data]));
+    body.append("file", data);
     let uploadInfo = { abortController: new AbortController() };
     this.uploads.set(id, uploadInfo);
 
