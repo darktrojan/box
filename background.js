@@ -303,6 +303,7 @@ browser.cloudFile.onAccountAdded.addListener((account) => {
 
 browser.cloudFile.onAccountDeleted.addListener((accountId) => {
   accountsMap.delete(accountId);
+  browser.storage.local.remove(accountId);
 });
 
 /* eslint-disable */
