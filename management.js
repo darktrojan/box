@@ -3,7 +3,7 @@ let accountId = new URL(location.href).searchParams.get("accountId");
 let notAuthed = document.getElementById("notAuthed");
 let clickMe = document.getElementById("clickMe");
 let authed = document.getElementById("authed");
-let loading = document.getElementById("provider-loading");
+let loading = document.getElementById("loading");
 let spaceBox = document.getElementById("provider-spacebox");
 
 (() => {
@@ -14,11 +14,18 @@ let spaceBox = document.getElementById("provider-spacebox");
 })();
 
 clickMe.onclick = async () => {
-  await browser.runtime.sendMessage({
-    action: "authorize",
-    accountId,
-  });
-  updateUI();
+  clickMe.disabled = true;
+  notAuthed.hidden = true;
+  loading.hidden = false;
+  try {
+    await browser.runtime.sendMessage({
+      action: "authorize",
+      accountId,
+    });
+  } finally {
+    clickMe.disabled = false;
+    updateUI();
+  }
 };
 
 async function updateUI() {
@@ -40,11 +47,11 @@ async function updateUI() {
     document.querySelector("svg > text").textContent = formatFileSize(account.spaceUsed + account.spaceRemaining);
 
     spaceBox.hidden = false;
-    loading.hidden = true;
   } else {
     notAuthed.hidden = false;
     authed.hidden = true;
   }
+  loading.hidden = true;
 }
 
 function foo(fraction) {

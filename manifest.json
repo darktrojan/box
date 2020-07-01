@@ -1,11 +1,11 @@
 {
   "name": "__MSG_extensionName__",
   "description": "__MSG_extensionDescription__",
-  "version": "4",
+  "version": "5",
   "applications": {
     "gecko": {
       "id": "box-cloudfile@darktrojan.net",
-      "strict_min_version": "68.0"
+      "strict_min_version": "78.0"
     }
   },
   "icons": {
@@ -25,10 +25,8 @@
     "service_url": "https://www.box.com/"
   },
   "permissions": [
-    "http://localhost/*",
-    "storage",
-    "webRequest",
-    "webRequestBlocking"
+    "identity",
+    "storage"
   ],
   "default_locale": "en",
   "manifest_version": 2

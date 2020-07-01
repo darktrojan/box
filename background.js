@@ -10,84 +10,39 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
 
   switch (message.action) {
     case "authorize": {
-      if (accountObj.authTabId) {
-        try {
-          await browser.tabs.update(accountObj.authTabId, { active: true });
-          return accountObj.authPromise;
-        } catch (ex) {
-          delete accountObj.authTabId;
-        }
-      }
+      let redirectURL = browser.identity.getRedirectURL();
+      let authURL = "https://account.box.com/api/oauth2/authorize" +
+        "?response_type=code" +
+        "&client_id=" + clientId +
+        "&redirect_uri=" + encodeURIComponent(redirectURL);
 
-      accountObj.preferencesTabId = sender.tab.id;
+      let responseURL = await browser.identity.launchWebAuthFlow({
+        interactive: true,
+        url: authURL
+      });
 
-      let callback = "http://localhost/box-dot-com-callback" +
-        "?accountId=" + encodeURIComponent(message.accountId);
-      let tab = await browser.tabs.create({
-        url: "https://account.box.com/api/oauth2/authorize" +
-          "?response_type=code" +
-          "&client_id=" + clientId +
-          "&redirect_uri=" + encodeURIComponent(callback),
+      let code = new URL(responseURL).searchParams.get("code");
+      let body = new FormData();
+      body.append("client_id", clientId);
+      body.append("client_secret", clientSecret);
+      body.append("grant_type", "authorization_code");
+      body.append("code", code);
+
+      let response = await fetch("https://account.box.com/api/oauth2/token", {
+        method: "POST",
+        body,
       });
-      accountObj.authTabId = tab.id;
-      return new Promise((resolve, reject) => {
-        accountObj.authPromise = { resolve, reject };
-      });
+
+      let result = await response.json();
+      let accountObj = accountsMap.get(message.accountId);
+      accountObj.accessToken = result.access_token;
+      await accountObj.setOAuthToken(result.refresh_token);
     }
     case "updateAccountInfo": {
       return accountObj.updateAccountInfo();
     }
   }
   return null;
-});
-
-browser.webRequest.onBeforeRequest.addListener(async (requestDetails) => {
-  let params = new URL(requestDetails.url).searchParams;
-  let accountId = params.get("accountId");
-  let code = params.get("code");
-
-  let body = new FormData();
-  body.append("client_id", clientId);
-  body.append("client_secret", clientSecret);
-  body.append("grant_type", "authorization_code");
-  body.append("code", code);
-
-  let response = await fetch("https://account.box.com/api/oauth2/token", {
-    method: "POST",
-    body,
-  });
-
-  let result = await response.json();
-  let accountObj = accountsMap.get(accountId);
-  accountObj.accessToken = result.access_token;
-  await accountObj.setOAuthToken(result.refresh_token);
-  if (accountObj.authTabId) {
-    let tabId = accountObj.authTabId;
-    delete accountObj.authTabId;
-    await browser.tabs.remove(tabId);
-  }
-  if (accountObj.preferencesTabId) {
-    await browser.tabs.update(accountObj.preferencesTabId, { active: true });
-    delete accountObj.preferencesTabId;
-  }
-  if (accountObj.authPromise) {
-    accountObj.authPromise.resolve();
-    delete accountObj.authPromise;
-  }
-
-  return { cancel: true };
-}, {
-  urls: ["http://localhost/box-dot-com-callback*"],
-}, ["blocking"]);
-
-browser.tabs.onRemoved.addListener(async (tabId) => {
-  for (let accountObj of accountsMap.values()) {
-    if (accountObj.authTabId && tabId == accountObj.authTabId && accountObj.authPromise) {
-      accountObj.authPromise.reject();
-      delete accountObj.authPromise;
-      delete accountObj.authTabId;
-    }
-  }
 });
 
 class Account {

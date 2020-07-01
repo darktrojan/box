@@ -7,7 +7,6 @@ module.exports = {
     es6: true,
   },
   extends: [
-    "plugin:mozilla/recommended",
   ],
   parserOptions: {
     ecmaVersion: 9,
